@@ -1,0 +1,13 @@
+{
+  "name": "bootcamp-template",
+  "version": "1.0.0",
+  "description": "Du bist Teil des PokéDelivery-Teams, einem innovativen Start-up, das Pokémon in ganz Kanto mit frischem Sushi versorgt. Die Plattform basiert auf modernen Prinzipien wie Automatisierung, Skalierbarkeit und Ausfallsicherheit.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
