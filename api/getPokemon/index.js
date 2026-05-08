@@ -1,7 +1,7 @@
 const axios = require('axios');
 
 module.exports = async function (context, req) {
-    const name = req.query.name || 'pikachu';
+    const name = req.params.name || req.query.name || 'pikachu';
 
     // Mapping of Pokémon types to their favorite sushi
     const sushiPreferences = {
