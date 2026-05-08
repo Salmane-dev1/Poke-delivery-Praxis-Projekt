@@ -22,7 +22,6 @@ logs/
 Thumbs.db
 
 # VS Code
-.vscode/
 
 # JetBrains
 .idea/
