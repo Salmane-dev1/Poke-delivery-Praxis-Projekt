@@ -1,0 +1,60 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Azure Functions
+local.settings.json
+bin/
+obj/
+
+# Environment variables
+.env
+.env.*
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# VS Code
+
+# JetBrains
+.idea/
+
+# Build output
+dist/
+build/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+
+# Ansible
+*.retry
+
+# Docker
+*.tar
+
+# Jenkins
+.jenkins/
+secrets/
+
+# Coverage
+coverage/
+
+# Temporary files
+*.tmp
+*.temp
+
+# macOS
+.AppleDouble
+.LSOverride
+
+# Windows
+desktop.ini

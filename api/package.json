@@ -1,0 +1,16 @@
+{
+  "dependencies": {
+    "axios": "^1.16.0"
+  },
+  "name": "api",
+  "version": "1.0.0",
+  "description": "- install scoop\r - with scoop install: `scoop install nodejs-lts vscode terraform bruno`\r - install Docker Desktop (with WSL2) separately\r - change to `/api`-dir\r - call `npm ci`, followed by `npx func start`",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}
