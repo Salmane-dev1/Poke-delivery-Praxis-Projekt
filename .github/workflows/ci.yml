@@ -2,16 +2,6 @@ name: PokéDelivery CI
 
 on:
   pull_request:
-    branches:
-      - develop
-      - main
-  push:
-    branches:
-      - develop
- name: PokéDelivery CI
-
-on:
-  pull_request:
     branches: [ "main", "develop" ]
   push:
     branches: [ "main", "develop" ]
@@ -19,19 +9,6 @@ on:
 jobs:
   api-tests:
     runs-on: ubuntu-latest
-
-    services:
-      pokedelivery-api:
-        build:
-          context: .
-          dockerfile: api/Dockerfile
-        ports:
-          - 7071:7071
-        healthcheck:
-          test: ["CMD-SHELL", "wget -qO- http://localhost:7071/api/pokemon/pikachu || exit 1"]
-          interval: 10s
-          timeout: 5s
-          retries: 10
 
     steps:
       - name: Checkout repository
@@ -42,6 +19,25 @@ jobs:
         with:
           node-version: 20
 
+      - name: Build API Docker image
+        run: |
+          docker build -t pokedelivery-api -f api/Dockerfile .
+
+      - name: Start API container
+        run: |
+          docker run -d \
+            -p 7071:7071 \
+            --name pokedelivery-api \
+            pokedelivery-api
+
+      - name: Wait for API to be ready
+        run: |
+          for i in {1..20}; do
+            curl -f http://localhost:7071/api/pokemon/pikachu && break
+            echo "Waiting for API..."
+            sleep 3
+          done
+
       - name: Install Bruno CLI
         run: npm install -g @usebruno/cli
 
@@ -51,3 +47,4 @@ jobs:
         run: |
           cd bruno
           bru run .
+
