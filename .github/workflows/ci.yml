@@ -8,16 +8,30 @@ on:
   push:
     branches:
       - develop
-      - main
+ name: PokéDelivery CI
+
+on:
+  pull_request:
+    branches: [ "main", "develop" ]
+  push:
+    branches: [ "main", "develop" ]
 
 jobs:
-  api-ci:
-    name: Build and test API
+  api-tests:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: api
+    services:
+      pokedelivery-api:
+        build:
+          context: .
+          dockerfile: api/Dockerfile
+        ports:
+          - 7071:7071
+        healthcheck:
+          test: ["CMD-SHELL", "wget -qO- http://localhost:7071/api/pokemon/pikachu || exit 1"]
+          interval: 10s
+          timeout: 5s
+          retries: 10
 
     steps:
       - name: Checkout repository
@@ -27,11 +41,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-          cache-dependency-path: api/package-lock.json
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install Bruno CLI
+        run: npm install -g @usebruno/cli
 
-      - name: Run unit tests
-        run: npm test
+      - name: Run Bruno API tests
+        env:
+          BASE_URL: http://localhost:7071/api
+        run: |
+          cd bruno
+          bru run .
