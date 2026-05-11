@@ -1,0 +1,24 @@
+{
+  "dependencies": {
+    "axios": "^1.16.0"
+  },
+  "name": "pokedelivery-api",
+  "version": "1.0.0",
+  "description": "Azure Functions Node.js API for retrieving Pokemon data from PokeAPI.",
+  "main": "getPokemon/index.js",
+  "devDependencies": {},
+  "scripts": {
+    "start": "func start",
+    "test": "node getPokemon/test.js",
+    "ci": "npm ci && npm test"
+  },
+  "keywords": [
+    "azure-functions",
+    "nodejs",
+    "pokemon",
+    "devops"
+  ],
+  "author": "Pok\u00e9Delivery Team",
+  "license": "ISC",
+  "type": "commonjs"
+}
