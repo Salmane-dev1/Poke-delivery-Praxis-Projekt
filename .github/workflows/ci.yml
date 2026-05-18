@@ -2,49 +2,45 @@ name: PokéDelivery CI
 
 on:
   pull_request:
-    branches: [ "main", "develop" ]
+    branches: [ "develop", "main" ]
   push:
-    branches: [ "main", "develop" ]
+    branches: [ "develop", "main" ]
 
 jobs:
-  api-tests:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
+      # ✅ 1. Code holen
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ✅ 2. Node.js Umgebung
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Build API Docker image
+      # ✅ 3. Dependencies installieren
+      - name: Install dependencies
         run: |
-          docker build -t pokedelivery-api -f api/Dockerfile .
+          cd api
+          npm ci
 
-      - name: Start API container
+      # ✅ 4. Unit Tests ausführen
+      - name: Run unit tests
         run: |
-          docker run -d \
-            -p 7071:7071 \
-            --name pokedelivery-api \
-            pokedelivery-api
+          cd api
+          npm test
 
-      - name: Wait for API to be ready
-        run: |
-          for i in {1..20}; do
-            curl -f http://localhost:7071/api/pokemon/pikachu && break
-            echo "Waiting for API..."
-            sleep 3
-          done
-
+      # ✅ 5. Bruno CLI installieren
       - name: Install Bruno CLI
         run: npm install -g @usebruno/cli
 
-      - name: Run Bruno API tests
+      # ✅ 6. API Tests (Bruno)
+      - name: Run API tests (Bruno)
         env:
           BASE_URL: http://localhost:7071/api
         run: |
           cd bruno
           bru run .
-
