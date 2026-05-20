@@ -1,0 +1,27 @@
+services:
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+    restart: always
+
+  agent1:
+    image: jenkins/inbound-agent
+    container_name: jenkins-agent-1
+    network_mode: "service:jenkins"
+    restart: always
+
+  agent2:
+    image: jenkins/inbound-agent
+    container_name: jenkins-agent-2
+    network_mode: "service:jenkins"
+    restart: always
+
+volumes:
+  jenkins_home:
+    name: jenkins_home
+
