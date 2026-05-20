@@ -85,3 +85,16 @@ Unit Tests mit npm test ausführen
 Die CI‑Konfiguration befindet sich in:
 .github/workflows/ci.yml
 Detaillierte Informationen zur CI sind in docs/ci.md dokumentiert.
+
+
+## Continuous Deployment Setup
+
+The CD pipeline is implemented using Jenkins with a multi-agent architecture.
+
+- Jenkins runs in Docker
+- Two agents execute pipeline stages
+- Docker Compose is used for orchestration
+- Ansible automates environment startup
+
+This setup ensures reproducibility and scalability.
+
