@@ -1,0 +1,13 @@
+meta {
+  name: Get Pokemon Pikachu
+  type: http
+}
+
+get {
+  url: {{BASE_URL}}/pokemon/pikachu
+}
+
+assert {
+  status: 200
+  body.name: pikachu
+}

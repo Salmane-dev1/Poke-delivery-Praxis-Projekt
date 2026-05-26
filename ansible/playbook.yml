@@ -1,0 +1,14 @@
+- name: Start Jenkins and Agents with Docker Compose
+  hosts: local
+  become: false
+
+  tasks:
+
+    - name: Start Docker service
+      command: sudo systemctl start docker
+
+    - name: Start containers using docker compose
+      command: docker compose up -d
+      args:
+        chdir: ../
+
