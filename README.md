@@ -1,100 +1,426 @@
-# PokéDelivery – DevOps Praxisprojekt
+# 🚀 PokéDelivery – DevOps CI/CD Projekt
 
-PokéDelivery ist eine serverlose REST‑API auf Basis von **Azure Functions (Node.js)**.
-Die API stellt Pokémon‑Informationen über einen klar definierten HTTP‑Endpunkt bereit:
+## 📌 Projektübersicht
 
-GET /pokemon/{name}
+PokéDelivery ist ein DevOps-Bootcamp-Projekt, in dem eine serverlose REST-API für Pokémon-Daten entwickelt, getestet, automatisiert bereitgestellt und überwacht wird.
 
-Das Projekt dient als **DevOps‑Praxisprojekt** und fokussiert sich auf:
-- sauberes Git‑Branching
-- automatisierte Tests
-- Continuous Integration mit GitHub Actions
-- späteres Continuous Deployment mit Jenkins
-## Technologie‑Stack
+Die Anwendung stellt Informationen zu einzelnen Pokémon über einen HTTP-Endpunkt bereit.
 
-- **Node.js 20** – Laufzeitumgebung für die API
-- **Azure Functions** – Serverlose Ausführung der REST‑API
-- **GitHub** – Source Control & Pull Requests
-- **GitHub Actions** – Continuous Integration (CI)
-- **Jenkins** – Continuous Deployment (geplant)
-- **Docker** – Containerisierung von CI/CD‑ und Monitoring‑Komponenten
-- **Terraform** – Infrastructure as Code für Azure (geplant)
-- **Prometheus & Grafana** – Monitoring und Visualisierung (geplant)
-- **Azure Application Insights** – Observability für die Azure Function (geplant)
-## Projektstruktur
+---
+
+# 🌐 API Endpoint
+
+```http
+GET /api/pokemon/{name}
+```
+
+## Beispiel
+
+```http
+GET /api/pokemon/pikachu
+```
+
+## Finaler Endpoint
+
+```bash
+https://salmane-poke-func.azurewebsites.net/api/pokemon/{name}
+```
+
+## Beispielaufruf
+
+```bash
+https://salmane-poke-func.azurewebsites.net/api/pokemon/pikachu
+```
+
+---
+
+# 🎯 Ziel des Projekts
+
+Ziel des Projekts ist der Aufbau einer realitätsnahen DevOps-Architektur mit:
+
+- GitHub Versionsverwaltung
+- Pull-Request Workflow
+- GitHub Actions Continuous Integration
+- Jenkins Continuous Deployment
+- Docker Compose Infrastruktur
+- Custom Jenkins Agent
+- Terraform Infrastructure as Code
+- Azure Functions Deployment
+- Azure Application Insights Monitoring
+
+---
+
+# 🏗️ Architekturübersicht
 
 ```text
-.
-├── api/                 # Azure Function (Node.js)
-│   ├── getPokemon/      # HTTP Function GET /pokemon/{name}
-│   ├── package.json     # NPM Konfiguration & Scripts
+Developer
+   |
+   | git push / pull request
+   v
+GitHub Repository
+   |
+   | CI
+   v
+GitHub Actions
+   |
+   | Tests erfolgreich
+   v
+Jenkins CD Pipeline
+   |
+   | Terraform
+   v
+Azure Infrastructure
+   |
+   | func publish
+   v
+Azure Function App
+   |
+   | Monitoring
+   v
+Application Insights
+```
+
+---
+
+# ⚙️ Eingesetzte Technologien
+
+| Technologie | Zweck |
+|---|---|
+| GitHub | Versionsverwaltung |
+| GitHub Actions | Continuous Integration |
+| Jenkins | Continuous Deployment |
+| Docker | Containerisierung |
+| Docker Compose | Multi-Container Setup |
+| Terraform | Infrastructure as Code |
+| Azure Functions | Serverless API |
+| Azure CLI | Azure Deployment |
+| Application Insights | Monitoring |
+| Ansible | Infrastrukturautomatisierung |
+
+---
+
+# 📂 Repository-Struktur
+
+```text
+Poke-delivery-Praxis-Projekt/
+│
+├── api/
+│   ├── getPokemon/
+│   │   ├── index.js
+│   │   ├── function.json
+│   │   └── test.js
+│   ├── host.json
+│   ├── package.json
 │   └── package-lock.json
 │
-├── docs/                # Projektdokumentation
-│   ├── branching.md     # Branching‑Strategie
-│   └── ci.md            # CI‑Dokumentation (wird ergänzt)
+├── terraform/
+│   ├── main.tf
+│   ├── variables.tf
+│   └── outputs.tf
 │
-├── .github/workflows/   # GitHub Actions CI
-│   └── ci.yml
+├── ansible/
+│   ├── inventory
+│   └── playbook.yml
 │
-├── README.md            # Projektübersicht (diese Datei)
-└── bootcamp-template/   # Bootcamp‑Vorgaben
+├── docs/
+│
+├── docker-compose.yml
+├── Dockerfile.agent
+└── README.md
+```
 
-## Lokale Ausführung
+---
 
-Voraussetzungen:
-- Node.js **Version 20**
-- npm
-- Linux‑Umgebung (z. B. WSL2 mit Ubuntu)
+# 🌱 Branching-Strategie
 
-### Abhängigkeiten installieren
+```text
+main       → stabiler Branch
+develop    → Integrationsbranch
+feature/*  → Feature-Branches
+```
 
-```bash
-cd api
-npm ci
-## Azure fuction lokal starten 
-npm start 
-Die Function ist danach lokal erreichbar unter:
-http://localhost:7071/api/pokemon/pikachu
+Änderungen werden ausschließlich über Pull Requests integriert.
 
-## Tests
+---
 
-Die API enthält einen **CI‑tauglichen Unit Test**, bei dem externe API‑Aufrufe gemockt werden.
-Dadurch sind die Tests reproduzierbar und unabhängig von externen Diensten.
+# 🔄 Continuous Integration
 
-### Tests lokal ausführen
+Die CI-Pipeline läuft über GitHub Actions.
 
-```bash
-cd api
+## Ablauf
+
+```text
+Pull Request / Push
+   |
+   v
+GitHub Actions
+   |
+   v
+npm install / npm ci
+   |
+   v
 npm test
-###Continuous Integration (CI)
-Die Continuous Integration wird mit **GitHub** Actions umgesetzt.
-##CI‑Trigger
-Die Pipeline startet automatisch bei:
+```
 
-Pull Requests auf develop und main
-Pushes auf develop und main
+## Testausgabe
 
-##CI‑Schritte
+```bash
+getPokemon unit test passed
+```
 
-Repository auschecken
-Node.js 20 einrichten
-Abhängigkeiten mit npm ci installieren
-Unit Tests mit npm test ausführen
+---
 
-Die CI‑Konfiguration befindet sich in:
-.github/workflows/ci.yml
-Detaillierte Informationen zur CI sind in docs/ci.md dokumentiert.
+# 🚀 Continuous Deployment mit Jenkins
 
+```text
+Checkout Code
+   |
+Install Dependencies
+   |
+Run Tests
+   |
+Build
+   |
+Terraform Apply
+   |
+Deploy to Azure
+```
 
-## Continuous Deployment Setup
+---
 
-The CD pipeline is implemented using Jenkins with a multi-agent architecture.
+# 🔧 Jenkins Pipeline
 
-- Jenkins runs in Docker
-- Two agents execute pipeline stages
-- Docker Compose is used for orchestration
-- Ansible automates environment startup
+## Code Checkout
 
-This setup ensures reproducibility and scalability.
+```groovy
+checkout([
+  \$class: 'GitSCM',
+  branches: [[name: '*/main']],
+  userRemoteConfigs: [[
+    url: 'https://github.com/Salmane-dev1/Poke-delivery-Praxis-Projekt.git'
+  ]],
+  extensions: [[\$class: 'CleanBeforeCheckout']]
+])
+```
 
+## Dependencies installieren
+
+```groovy
+dir('api') {
+    sh 'npm install'
+}
+```
+
+## Tests ausführen
+
+```groovy
+dir('api') {
+    sh 'npm test'
+}
+```
+
+## Terraform ausführen
+
+```groovy
+dir('terraform') {
+    sh """
+    terraform init
+
+    terraform import azurerm_resource_group.rg \
+    /subscriptions/<subscription-id>/resourceGroups/poke-delivery-rg || true
+
+    terraform apply -auto-approve
+    """
+}
+```
+
+## Deployment nach Azure
+
+```groovy
+dir('api') {
+    sh """
+    func azure functionapp publish salmane-poke-func --javascript --force
+    """
+}
+```
+
+---
+
+# 🔐 Authentifizierung mit Azure
+
+```text
+Credential ID: azure-sp
+```
+
+```groovy
+withCredentials([usernamePassword(
+    credentialsId: 'azure-sp',
+    usernameVariable: 'AZ_CLIENT_ID',
+    passwordVariable: 'AZ_CLIENT_SECRET'
+)])
+```
+
+---
+
+# 🏗️ Infrastructure as Code mit Terraform
+
+## Resource Group
+
+```hcl
+provider "azurerm" {
+  features {}
+}
+
+resource "azurerm_resource_group" "rg" {
+  name     = "poke-delivery-rg"
+  location = "Germany West Central"
+}
+```
+
+## Storage Account
+
+```hcl
+resource "azurerm_storage_account" "storage" {
+  name                     = "pokedelivery\${random_string.suffix.result}"
+  resource_group_name      = azurerm_resource_group.rg.name
+  location                 = azurerm_resource_group.rg.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+}
+```
+
+---
+
+# 📊 Monitoring und Observability
+
+Azure Application Insights überwacht:
+
+- Request Rate
+- Request Duration
+- Failure Rate
+- Exceptions
+- Logs
+- Live Metrics
+
+---
+
+# 🐳 Docker Compose Setup
+
+```bash
+docker compose up -d
+```
+
+## Beispiel docker-compose.yml
+
+```yaml
+services:
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+    restart: always
+
+  agent1:
+    image: jenkins-agent-azure
+    container_name: jenkins-agent-1
+    environment:
+      - JENKINS_URL=http://jenkins:8080
+      - JENKINS_AGENT_NAME=agent1
+      - JENKINS_SECRET=\${AGENT1_SECRET}
+      - JENKINS_WEB_SOCKET=true
+    depends_on:
+      - jenkins
+    restart: always
+```
+
+---
+
+# 🛠️ Aufgetretene Probleme und Lösungen
+
+| Problem | Lösung |
+|---|---|
+| Agent offline | Agent Secret aktualisiert |
+| az: not found | Azure CLI installiert |
+| func: not found | Azure Functions Core Tools installiert |
+| terraform: not found | Terraform installiert |
+| Resource Group existiert | terraform import genutzt |
+
+---
+
+# 📚 Was ich gelernt habe
+
+- CI/CD Architektur verstehen
+- Jenkins Agent Prinzip
+- Docker Compose Infrastruktur
+- Terraform State Management
+- Azure Functions Deployment
+- Monitoring mit Application Insights
+- Infrastructure as Code
+
+---
+
+# ✅ Aktueller Projektstatus
+
+| Bereich | Status |
+|---|---|
+| REST API | ✅ |
+| GitHub Repository | ✅ |
+| GitHub Actions CI | ✅ |
+| Jenkins CD | ✅ |
+| Docker Compose | ✅ |
+| Terraform IaC | ✅ |
+| Azure Deployment | ✅ |
+| Monitoring | ✅ |
+
+---
+
+# ▶️ Projekt ausführen
+
+## Jenkins Umgebung starten
+
+```bash
+docker compose up -d
+```
+
+## Jenkins öffnen
+
+```text
+http://localhost:8080
+```
+
+## Pipeline starten
+
+```text
+pokedelivery-cd → Build Now
+```
+
+---
+
+# 🧪 API testen
+
+```bash
+curl https://salmane-poke-func.azurewebsites.net/api/pokemon/pikachu
+```
+
+---
+
+# 🏁 Fazit
+
+Das Projekt zeigt eine vollständige End-to-End DevOps-Umsetzung einer serverlosen Cloud-Anwendung.
+
+Das System kombiniert:
+
+- Codeverwaltung
+- Continuous Integration
+- Continuous Deployment
+- Containerisierung
+- Infrastructure as Code
+- Cloud Deployment
+- Monitoring
+- Observability
+
+Dadurch wurde eine produktionsnahe DevOps-Architektur aufgebaut.
