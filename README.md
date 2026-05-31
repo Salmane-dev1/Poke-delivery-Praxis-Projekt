@@ -1,56 +1,103 @@
-# 🚀 PokéDelivery – DevOps CI/CD Projekt
+# PokéDelivery – DevOps Praxisprojekt
 
-## 📌 Projektübersicht
+PokéDelivery ist ein DevOps-Praxisprojekt mit einer serverlosen REST-API auf Basis von **Azure Functions** und **Node.js**.
 
-PokéDelivery ist ein DevOps-Bootcamp-Projekt, in dem eine serverlose REST-API für Pokémon-Daten entwickelt, getestet, automatisiert bereitgestellt und überwacht wird.
+Die Anwendung stellt Pokémon-Informationen über einen HTTP-Endpunkt bereit und wird mit einer vollständigen DevOps-Pipeline entwickelt, getestet, deployed und überwacht.
 
-Die Anwendung stellt Informationen zu einzelnen Pokémon über einen HTTP-Endpunkt bereit.
-
----
-
-# 🌐 API Endpoint
+## API Endpoint
 
 ```http
 GET /api/pokemon/{name}
 ```
 
-## Beispiel
+### Beispiel
 
 ```http
 GET /api/pokemon/pikachu
 ```
 
-## Finaler Endpoint
+### Finaler Azure Endpoint
 
-```bash
-https://salmane-poke-func.azurewebsites.net/api/pokemon/{name}
-```
-
-## Beispielaufruf
-
-```bash
+```text
 https://salmane-poke-func.azurewebsites.net/api/pokemon/pikachu
 ```
 
 ---
 
-# 🎯 Ziel des Projekts
+## Ziel des Projekts
 
-Ziel des Projekts ist der Aufbau einer realitätsnahen DevOps-Architektur mit:
+Ziel des Projekts ist der Aufbau einer praxisnahen DevOps-Architektur mit:
 
 - GitHub Versionsverwaltung
-- Pull-Request Workflow
-- GitHub Actions Continuous Integration
-- Jenkins Continuous Deployment
-- Docker Compose Infrastruktur
+- Branching-Strategie mit Pull Requests
+- GitHub Actions für Continuous Integration
+- Jenkins für Continuous Deployment
+- Docker Compose für lokale Infrastruktur
 - Custom Jenkins Agent
-- Terraform Infrastructure as Code
-- Azure Functions Deployment
-- Azure Application Insights Monitoring
+- Terraform für Infrastructure as Code auf Azure
+- Azure Functions als serverlose Laufzeitumgebung
+- Azure Application Insights für Cloud Observability
+- Prometheus, Blackbox Exporter und Grafana für zusätzliches API-Monitoring
 
 ---
 
-# 🏗️ Architekturübersicht
+## Technologie-Stack
+
+- **Node.js 20** – Laufzeitumgebung für die API
+- **Azure Functions** – Serverlose REST-API
+- **GitHub** – Source Control und Pull Requests
+- **GitHub Actions** – Continuous Integration
+- **Jenkins** – Continuous Deployment
+- **Docker** – Containerisierung
+- **Docker Compose** – Orchestrierung der lokalen DevOps- und Monitoring-Umgebung
+- **Terraform** – Infrastructure as Code für Azure
+- **Ansible** – Automatisierung der Infrastrukturumgebung
+- **Prometheus** – Metriken sammeln
+- **Blackbox Exporter** – HTTP-Checks gegen die Azure Function API
+- **Grafana** – Visualisierung der Monitoring-Daten
+- **Azure Application Insights** – Cloud Monitoring und Observability
+
+---
+
+## Projektstruktur
+
+```text
+.
+├── api/                         # Azure Function App mit Node.js
+│   ├── getPokemon/              # HTTP Function für Pokémon-Daten
+│   ├── host.json
+│   ├── package.json
+│   └── package-lock.json
+│
+├── .github/workflows/           # GitHub Actions CI Pipeline
+│   └── ci.yml
+│
+├── ansible/                     # Ansible Automatisierung
+│   ├── inventory
+│   └── playbook.yml
+│
+├── bruno/                       # API Tests mit Bruno
+│
+├── docs/                        # Projektdokumentation
+│
+├── terraform/                   # Azure Infrastructure as Code
+│   ├── main.tf
+│   ├── variables.tf
+│   └── outputs.tf
+│
+├── monitoring/                  # Monitoring-Konfiguration
+│   └── blackbox/
+│       └── blackbox.yml
+│
+├── docker-compose.yml           # Jenkins, Agent, Prometheus, Grafana, Blackbox Exporter
+├── prometheus.yml               # Prometheus Scrape-Konfiguration
+├── Dockerfile.agent             # Custom Jenkins Agent Image
+└── README.md
+```
+
+---
+
+## Architekturübersicht
 
 ```text
 Developer
@@ -67,110 +114,46 @@ GitHub Actions
    v
 Jenkins CD Pipeline
    |
-   | Terraform
+   | Terraform + Azure Functions Deployment
    v
 Azure Infrastructure
    |
-   | func publish
-   v
-Azure Function App
-   |
    | Monitoring
    v
-Application Insights
+Application Insights + Prometheus/Grafana
 ```
 
 ---
 
-# ⚙️ Eingesetzte Technologien
+## Continuous Integration mit GitHub Actions
 
-| Technologie | Zweck |
-|---|---|
-| GitHub | Versionsverwaltung |
-| GitHub Actions | Continuous Integration |
-| Jenkins | Continuous Deployment |
-| Docker | Containerisierung |
-| Docker Compose | Multi-Container Setup |
-| Terraform | Infrastructure as Code |
-| Azure Functions | Serverless API |
-| Azure CLI | Azure Deployment |
-| Application Insights | Monitoring |
-| Ansible | Infrastrukturautomatisierung |
+Die CI-Pipeline läuft automatisch bei Pull Requests und Pushes auf die definierten Branches.
 
----
-
-# 📂 Repository-Struktur
+### CI-Schritte
 
 ```text
-Poke-delivery-Praxis-Projekt/
-│
-├── api/
-│   ├── getPokemon/
-│   │   ├── index.js
-│   │   ├── function.json
-│   │   └── test.js
-│   ├── host.json
-│   ├── package.json
-│   └── package-lock.json
-│
-├── terraform/
-│   ├── main.tf
-│   ├── variables.tf
-│   └── outputs.tf
-│
-├── ansible/
-│   ├── inventory
-│   └── playbook.yml
-│
-├── docs/
-│
-├── docker-compose.yml
-├── Dockerfile.agent
-└── README.md
-```
-
----
-
-# 🌱 Branching-Strategie
-
-```text
-main       → stabiler Branch
-develop    → Integrationsbranch
-feature/*  → Feature-Branches
-```
-
-Änderungen werden ausschließlich über Pull Requests integriert.
-
----
-
-# 🔄 Continuous Integration
-
-Die CI-Pipeline läuft über GitHub Actions.
-
-## Ablauf
-
-```text
-Pull Request / Push
+Checkout Repository
    |
-   v
-GitHub Actions
+Setup Node.js 20
    |
-   v
-npm install / npm ci
+npm ci
    |
-   v
 npm test
 ```
 
-## Testausgabe
+Die CI-Konfiguration befindet sich unter:
 
-```bash
-getPokemon unit test passed
+```text
+.github/workflows/ci.yml
 ```
 
 ---
 
-# 🚀 Continuous Deployment mit Jenkins
+## Continuous Deployment mit Jenkins
+
+Die CD-Pipeline wird mit Jenkins umgesetzt.
+
+### CD-Ablauf
 
 ```text
 Checkout Code
@@ -179,228 +162,221 @@ Install Dependencies
    |
 Run Tests
    |
-Build
-   |
 Terraform Apply
    |
-Deploy to Azure
+Deploy to Azure Function App
 ```
+
+Jenkins läuft lokal über Docker Compose. Zusätzlich wird ein Custom Jenkins Agent verwendet, der die benötigten Tools für Azure, Terraform und Deployment enthält.
 
 ---
 
-# 🔧 Jenkins Pipeline
+## Infrastructure as Code mit Terraform
 
-## Code Checkout
+Terraform wird genutzt, um die benötigte Azure-Infrastruktur bereitzustellen und reproduzierbar zu verwalten.
 
-```groovy
-checkout([
-  \$class: 'GitSCM',
-  branches: [[name: '*/main']],
-  userRemoteConfigs: [[
-    url: 'https://github.com/Salmane-dev1/Poke-delivery-Praxis-Projekt.git'
-  ]],
-  extensions: [[\$class: 'CleanBeforeCheckout']]
-])
-```
+Beispiele für verwaltete Ressourcen:
 
-## Dependencies installieren
+- Resource Group
+- Storage Account
+- Azure Function App
+- Application Insights
 
-```groovy
-dir('api') {
-    sh 'npm install'
-}
-```
-
-## Tests ausführen
-
-```groovy
-dir('api') {
-    sh 'npm test'
-}
-```
-
-## Terraform ausführen
-
-```groovy
-dir('terraform') {
-    sh """
-    terraform init
-
-    terraform import azurerm_resource_group.rg \
-    /subscriptions/<subscription-id>/resourceGroups/poke-delivery-rg || true
-
-    terraform apply -auto-approve
-    """
-}
-```
-
-## Deployment nach Azure
-
-```groovy
-dir('api') {
-    sh """
-    func azure functionapp publish salmane-poke-func --javascript --force
-    """
-}
-```
-
----
-
-# 🔐 Authentifizierung mit Azure
+Die Terraform-Dateien befinden sich im Ordner:
 
 ```text
-Credential ID: azure-sp
-```
-
-```groovy
-withCredentials([usernamePassword(
-    credentialsId: 'azure-sp',
-    usernameVariable: 'AZ_CLIENT_ID',
-    passwordVariable: 'AZ_CLIENT_SECRET'
-)])
+terraform/
 ```
 
 ---
 
-# 🏗️ Infrastructure as Code mit Terraform
+## Monitoring mit Prometheus, Blackbox Exporter und Grafana
 
-## Resource Group
+Zusätzlich zu Azure Application Insights wird die PokéDelivery API mit Prometheus und Grafana überwacht.
 
-```hcl
-provider "azurerm" {
-  features {}
-}
+Da Azure Functions nicht automatisch einen klassischen `/metrics` Endpunkt bereitstellen, wird der **Blackbox Exporter** verwendet. Dieser prüft die API von außen über HTTP.
 
-resource "azurerm_resource_group" "rg" {
-  name     = "poke-delivery-rg"
-  location = "Germany West Central"
-}
+### Monitoring-Architektur
+
+```text
+Grafana
+   |
+   v
+Prometheus
+   |
+   v
+Blackbox Exporter
+   |
+   v
+Azure Function API
 ```
 
-## Storage Account
+### Überwachter Endpoint
 
-```hcl
-resource "azurerm_storage_account" "storage" {
-  name                     = "pokedelivery\${random_string.suffix.result}"
-  resource_group_name      = azurerm_resource_group.rg.name
-  location                 = azurerm_resource_group.rg.location
-  account_tier             = "Standard"
-  account_replication_type = "LRS"
-}
+```text
+https://salmane-poke-func.azurewebsites.net/api/pokemon/pikachu
+```
+
+### Prometheus Job
+
+Der Prometheus Job `poke-delivery-api` nutzt den Blackbox Exporter, um den API-Endpunkt regelmäßig zu prüfen.
+
+### Verwendete Prometheus-Metriken
+
+#### API Availability
+
+```promql
+probe_success
+```
+
+Bedeutung:
+
+```text
+1 = API erreichbar
+0 = API nicht erreichbar
+```
+
+#### Response Time
+
+```promql
+probe_duration_seconds
+```
+
+Zeigt die Antwortzeit der API in Sekunden.
+
+#### HTTP Status Code
+
+```promql
+probe_http_status_code
+```
+
+Erwarteter Wert:
+
+```text
+200
 ```
 
 ---
 
-# 📊 Monitoring und Observability
+## Grafana Dashboard
 
-Azure Application Insights überwacht:
+In Grafana wurde ein Dashboard für die PokéDelivery API erstellt.
 
-- Request Rate
-- Request Duration
-- Failure Rate
-- Exceptions
-- Logs
-- Live Metrics
+### Dashboard Panels
+
+- **PokéDelivery API Availability**
+  - Query: `probe_success`
+- **PokéDelivery API Response Time**
+  - Query: `probe_duration_seconds`
+- **PokéDelivery HTTP Status Code**
+  - Query: `probe_http_status_code`
+
+Das Dashboard zeigt, ob die API erreichbar ist, wie schnell sie antwortet und welchen HTTP-Statuscode sie zurückgibt.
 
 ---
 
-# 🐳 Docker Compose Setup
+## Docker Compose Umgebung starten
+
+Die lokale DevOps- und Monitoring-Umgebung wird mit Docker Compose gestartet.
 
 ```bash
 docker compose up -d
 ```
 
-## Beispiel docker-compose.yml
-
-```yaml
-services:
-  jenkins:
-    image: jenkins/jenkins:lts
-    container_name: jenkins
-    ports:
-      - "8080:8080"
-      - "50000:50000"
-    volumes:
-      - jenkins_home:/var/jenkins_home
-    restart: always
-
-  agent1:
-    image: jenkins-agent-azure
-    container_name: jenkins-agent-1
-    environment:
-      - JENKINS_URL=http://jenkins:8080
-      - JENKINS_AGENT_NAME=agent1
-      - JENKINS_SECRET=\${AGENT1_SECRET}
-      - JENKINS_WEB_SOCKET=true
-    depends_on:
-      - jenkins
-    restart: always
-```
-
----
-
-# 🛠️ Aufgetretene Probleme und Lösungen
-
-| Problem | Lösung |
-|---|---|
-| Agent offline | Agent Secret aktualisiert |
-| az: not found | Azure CLI installiert |
-| func: not found | Azure Functions Core Tools installiert |
-| terraform: not found | Terraform installiert |
-| Resource Group existiert | terraform import genutzt |
-
----
-
-# 📚 Was ich gelernt habe
-
-- CI/CD Architektur verstehen
-- Jenkins Agent Prinzip
-- Docker Compose Infrastruktur
-- Terraform State Management
-- Azure Functions Deployment
-- Monitoring mit Application Insights
-- Infrastructure as Code
-
----
-
-# ✅ Aktueller Projektstatus
-
-| Bereich | Status |
-|---|---|
-| REST API | ✅ |
-| GitHub Repository | ✅ |
-| GitHub Actions CI | ✅ |
-| Jenkins CD | ✅ |
-| Docker Compose | ✅ |
-| Terraform IaC | ✅ |
-| Azure Deployment | ✅ |
-| Monitoring | ✅ |
-
----
-
-# ▶️ Projekt ausführen
-
-## Jenkins Umgebung starten
+Container prüfen:
 
 ```bash
-docker compose up -d
+docker ps
 ```
 
-## Jenkins öffnen
+Umgebung stoppen:
 
-```text
-http://localhost:8080
-```
-
-## Pipeline starten
-
-```text
-pokedelivery-cd → Build Now
+```bash
+docker compose down
 ```
 
 ---
 
-# 🧪 API testen
+## Lokale URLs
+
+```text
+Jenkins:           http://localhost:8080
+Prometheus:        http://localhost:9090
+Grafana:           http://localhost:3000
+Blackbox Exporter: http://localhost:9115
+```
+
+---
+
+## Prometheus prüfen
+
+Prometheus Targets öffnen:
+
+```text
+http://localhost:9090/targets
+```
+
+Erwartete Jobs:
+
+```text
+jenkins
+poke-delivery-api
+```
+
+Der Job `poke-delivery-api` sollte den Status `UP` haben.
+
+---
+
+## Grafana einrichten
+
+Grafana öffnen:
+
+```text
+http://localhost:3000
+```
+
+Standard Login:
+
+```text
+Username: admin
+Password: admin
+```
+
+Prometheus als Data Source hinzufügen:
+
+```text
+http://prometheus:9090
+```
+
+Wichtig: Innerhalb von Docker wird nicht `localhost`, sondern der Service-Name `prometheus` verwendet.
+
+---
+
+## API lokal testen
+
+In den API-Ordner wechseln:
+
+```bash
+cd api
+npm ci
+npm test
+```
+
+Azure Function lokal starten:
+
+```bash
+npm start
+```
+
+Lokaler Testaufruf:
+
+```text
+http://localhost:7071/api/pokemon/pikachu
+```
+
+---
+
+## API in Azure testen
 
 ```bash
 curl https://salmane-poke-func.azurewebsites.net/api/pokemon/pikachu
@@ -408,13 +384,48 @@ curl https://salmane-poke-func.azurewebsites.net/api/pokemon/pikachu
 
 ---
 
-# 🏁 Fazit
+## Aktueller Projektstatus
 
-Das Projekt zeigt eine vollständige End-to-End DevOps-Umsetzung einer serverlosen Cloud-Anwendung.
+| Bereich | Status |
+|---|---|
+| REST API | ✅ umgesetzt |
+| GitHub Repository | ✅ umgesetzt |
+| GitHub Actions CI | ✅ umgesetzt |
+| Jenkins CD | ✅ umgesetzt |
+| Docker Compose | ✅ umgesetzt |
+| Terraform IaC | ✅ umgesetzt |
+| Azure Deployment | ✅ umgesetzt |
+| Azure Application Insights | ✅ umgesetzt |
+| Prometheus Monitoring | ✅ umgesetzt |
+| Blackbox Exporter | ✅ umgesetzt |
+| Grafana Dashboard | ✅ umgesetzt |
 
-Das System kombiniert:
+---
 
-- Codeverwaltung
+## Was ich gelernt habe
+
+- Aufbau einer serverlosen REST-API mit Azure Functions
+- GitHub Branching und Pull Request Workflow
+- CI mit GitHub Actions
+- CD mit Jenkins
+- Docker Compose für lokale Infrastruktur
+- Custom Jenkins Agent Prinzip
+- Infrastructure as Code mit Terraform
+- Azure Deployment mit Function Apps
+- Monitoring mit Azure Application Insights
+- Externes API-Monitoring mit Prometheus Blackbox Exporter
+- Grafana Dashboards für Availability, Response Time und HTTP Status Code
+
+---
+
+## Fazit
+
+PokéDelivery zeigt eine vollständige End-to-End DevOps-Umsetzung einer serverlosen Cloud-Anwendung.
+
+Das Projekt kombiniert:
+
+- Softwareentwicklung
+- Versionsverwaltung
 - Continuous Integration
 - Continuous Deployment
 - Containerisierung
@@ -423,4 +434,4 @@ Das System kombiniert:
 - Monitoring
 - Observability
 
-Dadurch wurde eine produktionsnahe DevOps-Architektur aufgebaut.
+Damit wurde eine produktionsnahe DevOps-Architektur aufgebaut.
