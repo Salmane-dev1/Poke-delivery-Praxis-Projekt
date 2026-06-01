@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   jenkins:
     image: jenkins/jenkins:lts
@@ -10,18 +12,58 @@ services:
     restart: always
 
   agent1:
-    image: jenkins/inbound-agent
+    image: jenkins-agent-azure
     container_name: jenkins-agent-1
-    network_mode: "service:jenkins"
+    environment:
+      - JENKINS_URL=http://jenkins:8080
+      - JENKINS_AGENT_NAME=agent1
+      - JENKINS_SECRET=${AGENT1_SECRET}
+      - JENKINS_WEB_SOCKET=true
+    depends_on:
+      - jenkins
     restart: always
 
-  agent2:
-    image: jenkins/inbound-agent
-    container_name: jenkins-agent-2
-    network_mode: "service:jenkins"
+  blackbox-exporter:
+    image: prom/blackbox-exporter
+    container_name: blackbox-exporter
+    ports:
+      - "9115:9115"
+    volumes:
+      - ./monitoring/blackbox/blackbox.yml:/etc/blackbox_exporter/config.yml
+    command:
+      - "--config.file=/etc/blackbox_exporter/config.yml"
+    restart: always
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    depends_on:
+      - jenkins
+      - blackbox-exporter
+    restart: always
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
     restart: always
 
 volumes:
   jenkins_home:
     name: jenkins_home
 
+  prometheus_data:
+    name: prometheus_data
+
+  grafana_data:
+    name: grafana_data

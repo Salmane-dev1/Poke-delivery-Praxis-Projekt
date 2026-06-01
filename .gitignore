@@ -59,3 +59,4 @@ coverage/
 
 # Windows
 desktop.ini
+*.deb

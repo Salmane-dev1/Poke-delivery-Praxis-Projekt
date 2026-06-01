@@ -1,0 +1,34 @@
+FROM jenkins/inbound-agent
+
+USER root
+
+# Basis Pakete
+RUN apt-get update && \
+    apt-get install -y curl gnupg apt-transport-https ca-certificates unzip
+
+RUN update-ca-certificates
+
+# Azure CLI
+RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+
+# Node & npm
+RUN apt-get install -y nodejs npm
+
+# ✅ Terraform installieren
+RUN curl -fsSL https://releases.hashicorp.com/terraform/1.8.5/terraform_1.8.5_linux_amd64.zip -o terraform.zip && \
+    unzip terraform.zip && \
+    mv terraform /usr/local/bin/ && \
+    rm terraform.zip
+
+# Azure Functions Core Tools
+RUN mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor --batch --yes -o /etc/apt/keyrings/microsoft.gpg && \
+    chmod go+r /etc/apt/keyrings/microsoft.gpg
+
+RUN echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/microsoft-debian-bookworm-prod bookworm main" > /etc/apt/sources.list.d/microsoft.list
+
+RUN apt-get update && \
+    apt-get install -y azure-functions-core-tools-4
+
+USER jenkins
+
