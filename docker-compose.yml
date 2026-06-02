@@ -1,24 +1,39 @@
-version: '3.8'
-
 services:
   jenkins:
-    image: jenkins/jenkins:lts
+    build:
+      context: .
+      dockerfile: Dockerfile.jenkins
+    image: pokedelivery-jenkins:lts
     container_name: jenkins
     ports:
       - "8080:8080"
       - "50000:50000"
+    environment:
+      - CASC_JENKINS_CONFIG=/var/jenkins_home/casc_configs/jenkins.yaml
+      - JENKINS_ADMIN_USER=${JENKINS_ADMIN_USER}
+      - JENKINS_ADMIN_PASSWORD=${JENKINS_ADMIN_PASSWORD}
+      - AZ_CLIENT_ID=${AZ_CLIENT_ID}
+      - AZ_CLIENT_SECRET=${AZ_CLIENT_SECRET}
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID}
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
     volumes:
       - jenkins_home:/var/jenkins_home
+      - ./jenkins/casc:/var/jenkins_home/casc_configs
+      - ./jenkins/jobs:/var/jenkins_home/job-dsl
     restart: always
 
   agent1:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
     image: jenkins-agent-azure
     container_name: jenkins-agent-1
     environment:
       - JENKINS_URL=http://jenkins:8080
       - JENKINS_AGENT_NAME=agent1
-      - JENKINS_SECRET=${AGENT1_SECRET}
-      - JENKINS_WEB_SOCKET=true
+      - JENKINS_AGENT_WORKDIR=/home/jenkins/agent
+      - JENKINS_ADMIN_USER=${JENKINS_ADMIN_USER}
+      - JENKINS_ADMIN_PASSWORD=${JENKINS_ADMIN_PASSWORD}
     depends_on:
       - jenkins
     restart: always
@@ -47,6 +62,33 @@ services:
       - blackbox-exporter
     restart: always
 
+  loki:
+    image: grafana/loki:2.9.8
+    container_name: loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./monitoring/loki/loki-config.yml:/etc/loki/local-config.yml
+      - loki_data:/loki
+    command:
+      - "-config.file=/etc/loki/local-config.yml"
+    restart: always
+
+  promtail:
+    image: grafana/promtail:2.9.8
+    container_name: promtail
+    ports:
+      - "9080:9080"
+    volumes:
+      - ./monitoring/promtail/promtail-config.yml:/etc/promtail/config.yml
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command:
+      - "-config.file=/etc/promtail/config.yml"
+    depends_on:
+      - loki
+    restart: always
+
   grafana:
     image: grafana/grafana
     container_name: grafana
@@ -54,8 +96,10 @@ services:
       - "3000:3000"
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
     depends_on:
       - prometheus
+      - loki
     restart: always
 
 volumes:
@@ -67,3 +111,6 @@ volumes:
 
   grafana_data:
     name: grafana_data
+
+  loki_data:
+    name: loki_data

@@ -1,0 +1,49 @@
+jenkins:
+  systemMessage: "PokéDelivery Jenkins configured automatically with Configuration as Code"
+
+  numExecutors: 0
+
+  mode: NORMAL
+
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "${JENKINS_ADMIN_USER}"
+          name: "Salmane El Aouni"
+          password: "${JENKINS_ADMIN_PASSWORD}"
+
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+  nodes:
+    - permanent:
+        name: "agent1"
+        remoteFS: "/home/jenkins/agent"
+        labelString: "agent1"
+        mode: NORMAL
+        launcher:
+          inbound:
+            workDirSettings:
+              disabled: false
+              internalDir: "remoting"
+              failIfWorkDirIsMissing: false
+
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - usernamePassword:
+              scope: GLOBAL
+              id: "azure-sp"
+              description: "Azure Service Principal for PokéDelivery deployment"
+              username: "${AZ_CLIENT_ID}"
+              password: "${AZ_CLIENT_SECRET}"
+
+unclassified:
+  location:
+    url: "http://localhost:8080/"
+
+jobs:
+  - file: /var/jenkins_home/job-dsl/pokedelivery-cd.groovy

@@ -2,33 +2,48 @@ FROM jenkins/inbound-agent
 
 USER root
 
-# Basis Pakete
-RUN apt-get update && \
-    apt-get install -y curl gnupg apt-transport-https ca-certificates unzip
+# Basis-Pakete installieren
+RUN apt-get update && apt-get install -y \
+    curl \
+    gnupg \
+    apt-transport-https \
+    ca-certificates \
+    unzip \
+    git \
+    nodejs \
+    npm \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN update-ca-certificates
 
-# Azure CLI
+# Azure CLI installieren
 RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
 
-# Node & npm
-RUN apt-get install -y nodejs npm
-
-# ✅ Terraform installieren
-RUN curl -fsSL https://releases.hashicorp.com/terraform/1.8.5/terraform_1.8.5_linux_amd64.zip -o terraform.zip && \
+# Terraform installieren
+RUN ARCH="$(dpkg --print-architecture)" && \
+    TERRAFORM_VERSION="1.8.5" && \
+    curl -fsSL "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_${ARCH}.zip" -o terraform.zip && \
     unzip terraform.zip && \
     mv terraform /usr/local/bin/ && \
     rm terraform.zip
 
-# Azure Functions Core Tools
+# Microsoft Paketquelle für Azure Functions Core Tools hinzufügen
 RUN mkdir -p /etc/apt/keyrings && \
     curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor --batch --yes -o /etc/apt/keyrings/microsoft.gpg && \
     chmod go+r /etc/apt/keyrings/microsoft.gpg
 
-RUN echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/microsoft-debian-bookworm-prod bookworm main" > /etc/apt/sources.list.d/microsoft.list
+RUN ARCH="$(dpkg --print-architecture)" && \
+    echo "deb [arch=${ARCH} signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/microsoft-debian-bookworm-prod bookworm main" > /etc/apt/sources.list.d/microsoft.list
 
 RUN apt-get update && \
-    apt-get install -y azure-functions-core-tools-4
+    apt-get install -y azure-functions-core-tools-4 && \
+    rm -rf /var/lib/apt/lists/*
+
+# Automatisches Agent-Startskript kopieren
+COPY jenkins/agent/start-agent.sh /usr/local/bin/start-agent.sh
+
+RUN chmod +x /usr/local/bin/start-agent.sh
 
 USER jenkins
 
+ENTRYPOINT ["/usr/local/bin/start-agent.sh"]
