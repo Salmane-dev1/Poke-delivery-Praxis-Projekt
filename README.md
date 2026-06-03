@@ -2,7 +2,7 @@
 
 PokéDelivery ist ein DevOps-Praxisprojekt mit einer serverlosen REST-API auf Basis von **Azure Functions** und **Node.js**.
 
-Die Anwendung stellt Pokémon-Informationen über einen HTTP-Endpunkt bereit und wird mit einer vollständigen DevOps-Pipeline entwickelt, getestet, automatisch deployed und überwacht.
+Die Anwendung stellt Pokémon-Informationen über einen HTTP-Endpunkt bereit und wird mit einer vollständigen DevOps-Pipeline entwickelt, getestet, automatisiert bereitgestellt und überwacht.
 
 ---
 
@@ -28,20 +28,25 @@ https://salmane-poke-func.azurewebsites.net/api/pokemon/pikachu
 
 ## Ziel des Projekts
 
-Ziel des Projekts ist der Aufbau einer praxisnahen DevOps-Architektur mit:
+Ziel des Projekts ist der Aufbau einer praxisnahen, reproduzierbaren DevOps-Architektur mit:
 
 - GitHub Versionsverwaltung
 - Branching-Strategie mit Pull Requests
 - GitHub Actions für Continuous Integration
 - Jenkins für Continuous Deployment
-- automatisiertem Jenkins-Start über Bash-Skript
+- Jenkins Configuration as Code
+- Jenkins Job DSL für automatische Job-Erstellung
+- Pipeline as Code mit `Jenkinsfile`
+- rollenbasiertem Zugriff auf Jenkins
+- automatisiertem Jenkins-Agent
+- automatisiertem Start über `start.sh`
 - Docker Compose für lokale Infrastruktur
-- Custom Jenkins Agent
 - Terraform für Infrastructure as Code auf Azure
-- stabilem Terraform Provider Handling im Jenkins-Agent
 - Azure Functions als serverlose Laufzeitumgebung
 - Azure Application Insights für Cloud Observability
-- Prometheus, Blackbox Exporter und Grafana für API-Monitoring
+- Prometheus, Blackbox Exporter und Grafana für Metriken
+- Loki und Promtail für zentrale Container-Logs
+- Grafana Provisioning für Data Sources und Dashboards
 
 ---
 
@@ -52,15 +57,18 @@ Ziel des Projekts ist der Aufbau einer praxisnahen DevOps-Architektur mit:
 - **GitHub** – Source Control und Pull Requests
 - **GitHub Actions** – Continuous Integration
 - **Jenkins** – Continuous Deployment
+- **Jenkins Configuration as Code** – Jenkins-Konfiguration als Code
+- **Job DSL** – Automatische Erstellung des Jenkins Jobs
 - **Docker** – Containerisierung
 - **Docker Compose** – Orchestrierung der lokalen DevOps- und Monitoring-Umgebung
 - **Terraform** – Infrastructure as Code für Azure
 - **Azure CLI** – Authentifizierung und Deployment nach Azure
 - **Azure Functions Core Tools** – Publishing der Function App
-- **Ansible** – Automatisierung der Infrastrukturumgebung
 - **Prometheus** – Metriken sammeln
 - **Blackbox Exporter** – HTTP-Checks gegen die Azure Function API
-- **Grafana** – Visualisierung der Monitoring-Daten
+- **Grafana** – Visualisierung von Metriken und Logs
+- **Loki** – Zentrale Log-Speicherung
+- **Promtail** – Einsammeln von Docker-Container-Logs
 - **Azure Application Insights** – Cloud Monitoring und Observability
 - **Bash** – Automatisierung des lokalen Startprozesses
 
@@ -80,8 +88,6 @@ Ziel des Projekts ist der Aufbau einer praxisnahen DevOps-Architektur mit:
 │   └── ci.yml
 │
 ├── ansible/                     # Ansible Automatisierung
-│   ├── inventory
-│   └── playbook.yml
 │
 ├── bruno/                       # API Tests mit Bruno
 │
@@ -92,14 +98,38 @@ Ziel des Projekts ist der Aufbau einer praxisnahen DevOps-Architektur mit:
 │   ├── variables.tf
 │   └── outputs.tf
 │
-├── monitoring/                  # Monitoring-Konfiguration
-│   └── blackbox/
-│       └── blackbox.yml
+├── jenkins/                     # Jenkins Configuration as Code
+│   ├── plugins.txt              # Jenkins Plugins als Code
+│   ├── casc/
+│   │   └── jenkins.yaml          # Jenkins Security, Credentials, Nodes und Jobs
+│   ├── jobs/
+│   │   └── pokedelivery-cd.groovy # Job DSL für Jenkins Pipeline Job
+│   └── agent/
+│       └── start-agent.sh        # Automatische Agent-Verbindung
 │
-├── docker-compose.yml           # Jenkins, Agent, Prometheus, Grafana, Blackbox Exporter
-├── prometheus.yml               # Prometheus Scrape-Konfiguration
+├── grafana/                     # Grafana Provisioning
+│   └── provisioning/
+│       ├── datasources/
+│       │   └── datasources.yml   # Prometheus und Loki Data Sources
+│       └── dashboards/
+│           ├── dashboards.yml
+│           └── pokedelivery-monitoring.json
+│
+├── monitoring/                  # Monitoring-Konfiguration
+│   ├── blackbox/
+│   │   └── blackbox.yml
+│   ├── loki/
+│   │   └── loki-config.yml
+│   └── promtail/
+│       └── promtail-config.yml
+│
+├── Jenkinsfile                  # Jenkins Pipeline as Code
+├── Dockerfile.jenkins           # Custom Jenkins Controller Image
 ├── Dockerfile.agent             # Custom Jenkins Agent Image
-├── start.sh                     # Startet Docker Compose und triggert Jenkins automatisch
+├── docker-compose.yml           # Lokale DevOps- und Monitoring-Umgebung
+├── prometheus.yml               # Prometheus Scrape-Konfiguration
+├── start.sh                     # Startet Stack und triggert Jenkins automatisch
+├── .env.example                 # Vorlage für lokale Umgebungsvariablen
 └── README.md
 ```
 
@@ -126,10 +156,121 @@ Jenkins CD Pipeline
    v
 Azure Infrastructure
    |
-   | Monitoring
+   | Monitoring / Observability
    v
-Application Insights + Prometheus/Grafana
+Application Insights + Prometheus + Grafana + Loki
 ```
+
+---
+
+## Reproduzierbarer Start der Umgebung
+
+Die gesamte lokale DevOps- und Monitoring-Umgebung wird über das Skript `start.sh` gestartet.
+
+### Startbefehl
+
+```bash
+./start.sh
+```
+
+Das Skript übernimmt automatisch:
+
+1. Laden der lokalen Umgebungsvariablen aus `.env`
+2. Build der benötigten Docker Images
+3. Start aller Docker-Compose-Services
+4. Warten auf Jenkins
+5. Warten auf die automatische Jenkins-Konfiguration
+6. Warten auf den Jenkins-Agent
+7. Abrufen eines gültigen Jenkins CSRF-Crumbs mit Session-Cookie
+8. Automatisches Starten des Jenkins Jobs `pokedelivery-cd`
+
+Dadurch ist kein manueller Klick auf **Build Now** notwendig.
+
+---
+
+## Reproduzierbarkeit nach Löschen der Volumes
+
+Das Projekt ist so aufgebaut, dass die Umgebung auch nach einem vollständigen Löschen der Docker Volumes wieder automatisch aufgebaut werden kann.
+
+```bash
+docker compose down -v --remove-orphans
+./start.sh
+```
+
+Nach diesem Rebuild werden automatisch wiederhergestellt:
+
+- Jenkins Plugins
+- Jenkins Benutzer
+- rollenbasierte Berechtigungen
+- Jenkins Credentials
+- Jenkins Node `agent1`
+- Jenkins Job `pokedelivery-cd`
+- Jenkins Agent-Verbindung
+- Grafana Data Sources
+- Grafana Dashboard
+- Prometheus, Loki, Promtail und Blackbox Exporter
+- automatischer Start der CD-Pipeline
+
+Dadurch ist das Projekt auch auf einer anderen Maschine reproduzierbar startbar.
+
+---
+
+## Umgebungsvariablen und Secrets
+
+Echte Secrets werden nicht im Repository gespeichert. Dafür wird lokal eine `.env` Datei verwendet.
+
+Als Vorlage dient:
+
+```bash
+cp .env.example .env
+```
+
+Die `.env` Datei enthält unter anderem:
+
+```env
+JENKINS_ADMIN_USER=selaouni
+JENKINS_ADMIN_PASSWORD=change-me
+
+JENKINS_MANAGER_USER=manager
+JENKINS_MANAGER_PASSWORD=change-me
+
+JENKINS_DEVELOPER_USER=developer
+JENKINS_DEVELOPER_PASSWORD=change-me
+
+JENKINS_JOB_NAME=pokedelivery-cd
+
+AZ_CLIENT_ID=your-azure-client-id
+AZ_CLIENT_SECRET=your-azure-client-secret
+AZURE_TENANT_ID=your-azure-tenant-id
+```
+
+Die Datei `.env` ist in `.gitignore` eingetragen und darf nicht committed werden.
+
+---
+
+## Security und rollenbasierter Zugriff
+
+Der Zugriff auf Jenkins ist authentifiziert und rollenbasiert umgesetzt.
+
+Die Benutzer und Berechtigungen werden über Jenkins Configuration as Code in `jenkins/casc/jenkins.yaml` definiert.
+
+| Benutzer | Zugriff |
+|---|---|
+| anonymous | Kein Zugriff |
+| manager | Nur lesender Zugriff |
+| developer | Vollzugriff |
+| admin user | Vollzugriff |
+
+### Umsetzung
+
+- Anonyme Benutzer erhalten keine Berechtigungen.
+- Der Manager-Benutzer kann Jenkins, Jobs, Views und Agent-Status lesen.
+- Der Manager-Benutzer kann keine Builds starten und keine Konfiguration ändern.
+- Der Developer-Benutzer erhält administrativen Zugriff.
+- Der Admin-Benutzer bleibt ebenfalls Administrator.
+- Passwörter werden aus `.env` geladen und nicht im Repository gespeichert.
+
+Damit erfüllt das Projekt die Anforderungen an authentifizierten und rollenbasierten Zugriff auf das Continuous-Deployment-System.
 
 ---
 
@@ -159,7 +300,7 @@ Die CI-Konfiguration befindet sich unter:
 
 ## Continuous Deployment mit Jenkins
 
-Die CD-Pipeline wird mit Jenkins umgesetzt. Jenkins läuft lokal als Docker-Container und nutzt einen Custom Jenkins Agent für Build-, Test-, Terraform- und Deployment-Schritte.
+Die CD-Pipeline wird mit Jenkins umgesetzt. Jenkins läuft als Docker-Container und nutzt einen Custom Jenkins Agent für Build-, Test-, Terraform- und Deployment-Schritte.
 
 ### CD-Ablauf
 
@@ -183,148 +324,41 @@ Der Jenkins Job heißt:
 pokedelivery-cd
 ```
 
-Der Job wird nicht mehr manuell über **Build Now** gestartet, sondern automatisch durch das Startskript `start.sh` ausgelöst.
+Der Job wird automatisch über Job DSL erstellt und verwendet das `Jenkinsfile` aus dem Repository.
 
 ---
 
-## Automatisierter Start mit `start.sh`
+## Jenkins Configuration as Code
 
-Damit die lokale DevOps-Umgebung reproduzierbar gestartet werden kann, wurde ein Bash-Skript erstellt.
+Jenkins wird möglichst vollständig als Code konfiguriert.
 
-Das Skript übernimmt folgende Aufgaben:
+### Bestandteile
 
-1. Start der gesamten Docker-Compose-Umgebung
-2. Laden der Jenkins-Zugangsdaten aus `.env`
-3. Warten, bis Jenkins erreichbar ist
-4. Abrufen eines Jenkins CSRF-Crumbs
-5. Automatisches Auslösen des Jenkins Jobs `pokedelivery-cd`
+- `Dockerfile.jenkins` baut das Jenkins Controller Image.
+- `jenkins/plugins.txt` installiert benötigte Jenkins Plugins.
+- `jenkins/casc/jenkins.yaml` definiert Security, Benutzer, Rollen, Credentials und Nodes.
+- `jenkins/jobs/pokedelivery-cd.groovy` erstellt den Pipeline Job automatisch.
+- `Jenkinsfile` beschreibt die eigentliche CD-Pipeline.
 
-### Startbefehl
+Dadurch gehen Jenkins-Konfigurationen nach `docker compose down -v` nicht dauerhaft verloren, sondern werden beim nächsten Start wieder aus dem Repository aufgebaut.
 
-```bash
-./start.sh
+---
+
+## Automatischer Jenkins Agent
+
+Der Jenkins Agent wird ebenfalls automatisiert gestartet.
+
+Früher wurde ein festes Agent Secret in `.env` benötigt. Das ist nach einem vollständigen Rebuild problematisch, weil Jenkins neue Agent-Secrets erzeugt.
+
+Die aktuelle Lösung verwendet:
+
+```text
+jenkins/agent/start-agent.sh
 ```
 
-Dadurch werden automatisch gestartet:
+Das Skript wartet auf Jenkins, ruft das aktuelle Agent Secret über die Jenkins API ab und verbindet den Agent automatisch als `agent1`.
 
-- Jenkins
-- Jenkins Agent
-- Prometheus
-- Blackbox Exporter
-- Grafana
-- Jenkins CD Pipeline
-
-### Inhalt der `.env` Datei
-
-Die Datei `.env` enthält lokale Secrets und darf nicht in GitHub committed werden.
-
-```env
-AGENT1_SECRET=<jenkins-agent-secret>
-JENKINS_USER=selaouni
-JENKINS_API_TOKEN=<jenkins-api-token>
-JENKINS_JOB_NAME=pokedelivery-cd
-```
-
-### Wichtig
-
-Die `.env` Datei muss in `.gitignore` stehen:
-
-```gitignore
-.env
-```
-
-### Beispiel `start.sh`
-
-```bash
-#!/bin/bash
-
-set -e
-
-echo "======================================"
-echo "Starting PokéDelivery DevOps Stack"
-echo "======================================"
-
-echo "Starting Docker Compose services..."
-docker compose up -d
-
-echo "Loading environment variables from .env..."
-
-if [ -f .env ]; then
-  set -a
-  source .env
-  set +a
-else
-  echo "ERROR: .env file not found."
-  exit 1
-fi
-
-if [ -z "$JENKINS_USER" ]; then
-  echo "ERROR: JENKINS_USER is missing in .env"
-  exit 1
-fi
-
-if [ -z "$JENKINS_API_TOKEN" ]; then
-  echo "ERROR: JENKINS_API_TOKEN is missing in .env"
-  exit 1
-fi
-
-if [ -z "$JENKINS_JOB_NAME" ]; then
-  echo "ERROR: JENKINS_JOB_NAME is missing in .env"
-  exit 1
-fi
-
-JENKINS_URL="http://localhost:8080"
-
-echo "Waiting for Jenkins to become reachable..."
-
-until curl -s "$JENKINS_URL/login" > /dev/null; do
-  echo "Jenkins is not ready yet. Waiting 10 seconds..."
-  sleep 10
-done
-
-echo "Jenkins is reachable."
-
-echo "Waiting additional 30 seconds for Jenkins initialization..."
-sleep 30
-
-echo "Getting Jenkins crumb..."
-
-CRUMB=$(curl -s   --user "$JENKINS_USER:$JENKINS_API_TOKEN"   "$JENKINS_URL/crumbIssuer/api/xml?xpath=concat(//crumbRequestField,":",//crumb)")
-
-if [ -z "$CRUMB" ]; then
-  echo "ERROR: Could not get Jenkins crumb."
-  echo "Check your Jenkins username or API token."
-  exit 1
-fi
-
-echo "Triggering Jenkins job: $JENKINS_JOB_NAME"
-
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}"   -X POST   "$JENKINS_URL/job/$JENKINS_JOB_NAME/build"   --user "$JENKINS_USER:$JENKINS_API_TOKEN"   -H "$CRUMB")
-
-if [ "$HTTP_CODE" = "201" ] || [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "302" ]; then
-  echo "Jenkins job triggered successfully."
-else
-  echo "ERROR: Jenkins job trigger failed."
-  echo "HTTP status code: $HTTP_CODE"
-  echo "Check if the Jenkins job name is correct."
-  exit 1
-fi
-
-echo "======================================"
-echo "PokéDelivery environment is running."
-echo "Jenkins job was started automatically."
-echo "======================================"
-```
-
-### Skript ausführbar machen
-
-```bash
-chmod +x start.sh
-```
-
-### Ergebnis
-
-Nach dem Ausführen von `./start.sh` wird die gesamte Umgebung gestartet und der Jenkins Job automatisch ausgeführt. Ein manueller Klick auf **Build Now** ist nicht mehr notwendig.
+Dadurch ist kein manuell gepflegtes `AGENT1_SECRET` mehr notwendig.
 
 ---
 
@@ -339,54 +373,37 @@ Die lokale DevOps- und Monitoring-Umgebung wird über Docker Compose betrieben.
 - Prometheus
 - Blackbox Exporter
 - Grafana
+- Loki
+- Promtail
 
-### Persistente Volumes
+### Volumes
 
-Damit Daten nach einem Neustart nicht verloren gehen, werden Docker Volumes verwendet:
+- `jenkins_home` für Jenkins-Daten
+- `prometheus_data` für Prometheus-Daten
+- `grafana_data` für Grafana-Daten
+- `loki_data` für Loki-Logs
 
-- `jenkins_home` für Jenkins Jobs, Plugins, Credentials und Konfiguration
-- `prometheus_data` für Prometheus Metriken
-- `grafana_data` für Grafana Dashboards und Data Sources
-
-### Umgebung manuell starten
-
-```bash
-docker compose up -d
-```
-
-### Empfohlener Start
+### Wichtige Befehle
 
 ```bash
 ./start.sh
 ```
 
-### Container prüfen
-
-```bash
-docker ps
-```
-
-### Umgebung stoppen
-
 ```bash
 docker compose down
 ```
 
-### Wichtig
-
-Nicht verwenden, wenn Volumes erhalten bleiben sollen:
-
 ```bash
-docker compose down -v
+docker compose down -v --remove-orphans
 ```
 
-Der Parameter `-v` löscht die Docker Volumes und damit z. B. Grafana Dashboards oder Jenkins-Daten.
+Der Befehl mit `-v` löscht Volumes. Das Projekt kann danach über `./start.sh` wieder vollständig aus Code aufgebaut werden.
 
 ---
 
 ## Infrastructure as Code mit Terraform
 
-Terraform wird genutzt, um die benötigte Azure-Infrastruktur bereitzustellen und reproduzierbar zu verwalten.
+Terraform wird genutzt, um die Azure-Infrastruktur reproduzierbar zu verwalten.
 
 Beispiele für verwaltete Ressourcen:
 
@@ -403,173 +420,140 @@ terraform/
 
 ---
 
-## Terraform Provider Problem und Lösung
+## Terraform Provider Handling im Jenkins-Agent
 
-Während der Jenkins-CD-Pipeline trat beim Schritt `terraform init` ein Problem auf.
-
-Terraform wollte die benötigten Provider aus der offiziellen Terraform Registry laden:
-
-```text
-registry.terraform.io
-```
-
-Im Jenkins-Agent-Container kam es dabei zu Timeouts oder Registry-Problemen.
-
-### Fehlermeldung
-
-```text
-Failed to query available provider packages
-could not connect to registry.terraform.io
-Client.Timeout exceeded while awaiting headers
-```
+Während der Jenkins-CD-Pipeline kam es beim Schritt `terraform init` zu Problemen beim Zugriff auf die Terraform Registry.
 
 ### Ursache
 
-Terraform lädt Provider standardmäßig während `terraform init` aus dem Internet. In Container-basierten CI/CD-Umgebungen kann dieser Zugriff durch Netzwerkprobleme, DNS-Probleme, Proxy-Einschränkungen oder Timeouts instabil sein.
+Terraform lädt Provider standardmäßig aus dem Internet. In containerisierten CI/CD-Umgebungen können Netzwerk-, DNS- oder Timeout-Probleme auftreten.
 
 ### Lösung
 
-Die Lösung war ein lokaler Terraform Provider Mirror im Jenkins-Agent.
+Im Jenkins-Agent wird ein lokaler Terraform Provider Mirror aufgebaut. Die benötigten Provider werden in einer Terraform-konformen Ordnerstruktur abgelegt und über `.terraformrc` referenziert.
 
-Dabei werden die benötigten Provider manuell heruntergeladen und in der Terraform-konformen Ordnerstruktur abgelegt.
+Wichtige Punkte:
 
-### Wichtige Punkte der Lösung
+- Provider werden gezielt heruntergeladen.
+- Provider-Versionen müssen exakt passen.
+- Terraform wird auf lokale Provider konfiguriert.
+- `.terraform.lock.hcl` wird vor `terraform init` entfernt, um Checksum-Konflikte mit manuell bereitgestellten Providern zu vermeiden.
 
-- Provider werden mit `curl` heruntergeladen
-- Provider werden lokal im Jenkins-Agent gespeichert
-- Terraform wird über `.terraformrc` gezwungen, lokale Provider zu verwenden
-- Die Provider-Version muss exakt zur erwarteten Version passen
-- Die `.terraform.lock.hcl` wird vor `terraform init` entfernt, um Checksum-Konflikte mit manuell geladenen Providern zu vermeiden
-
-### Terraform Provider Mirror Beispiel
-
-```bash
-rm -f /home/jenkins/.terraformrc
-rm -rf .terraform
-rm -f .terraform.lock.hcl
-
-mkdir -p /home/jenkins/.terraform.d/plugins/registry.terraform.io/hashicorp/azurerm/3.117.1/linux_amd64
-mkdir -p /home/jenkins/.terraform.d/plugins/registry.terraform.io/hashicorp/random/3.9.0/linux_amd64
-
-curl -L -o azurerm.zip https://releases.hashicorp.com/terraform-provider-azurerm/3.117.1/terraform-provider-azurerm_3.117.1_linux_amd64.zip
-unzip -o azurerm.zip -d azurerm_tmp
-mv azurerm_tmp/terraform-provider-azurerm_* /home/jenkins/.terraform.d/plugins/registry.terraform.io/hashicorp/azurerm/3.117.1/linux_amd64/
-rm -rf azurerm.zip azurerm_tmp
-
-curl -L -o random.zip https://releases.hashicorp.com/terraform-provider-random/3.9.0/terraform-provider-random_3.9.0_linux_amd64.zip
-unzip -o random.zip -d random_tmp
-mv random_tmp/terraform-provider-random_* /home/jenkins/.terraform.d/plugins/registry.terraform.io/hashicorp/random/3.9.0/linux_amd64/
-rm -rf random.zip random_tmp
-
-cat > /home/jenkins/.terraformrc <<'EOF'
-provider_installation {
-  filesystem_mirror {
-    path    = "/home/jenkins/.terraform.d/plugins"
-    include = ["registry.terraform.io/hashicorp/*"]
-  }
-
-  direct {
-    exclude = ["registry.terraform.io/hashicorp/*"]
-  }
-}
-EOF
-
-terraform init
-```
-
-### Ergebnis
-
-Nach der Korrektur lief die Jenkins Pipeline erfolgreich grün durch. Terraform konnte initialisiert werden, `terraform apply` wurde ausgeführt und anschließend wurde die Azure Function erfolgreich deployed.
+Dadurch läuft `terraform init` stabil im Jenkins-Agent.
 
 ---
 
-## Monitoring mit Prometheus, Blackbox Exporter und Grafana
+## Monitoring und Observability
 
-Zusätzlich zu Azure Application Insights wird die PokéDelivery API mit Prometheus und Grafana überwacht.
+Das Monitoring besteht aus Metriken und Logs.
 
-Da Azure Functions nicht automatisch einen klassischen `/metrics` Endpunkt bereitstellen, wird der **Blackbox Exporter** verwendet. Dieser prüft die API von außen über HTTP.
+### Metriken
 
-### Monitoring-Architektur
+Prometheus sammelt:
+
+- Jenkins-Metriken über `/prometheus`
+- API-Verfügbarkeit über den Blackbox Exporter
+
+Grafana visualisiert diese Metriken in einem Dashboard.
+
+### Logs
+
+Promtail sammelt Docker-Container-Logs und sendet diese an Loki. Grafana zeigt die Logs zentral über Loki an.
+
+---
+
+## Monitoring-Architektur
 
 ```text
 Grafana
    |
-   v
-Prometheus
+   +-------------------+
+   |                   |
+Prometheus            Loki
+   |                   |
+   |                Promtail
+   |                   |
+Jenkins Metrics    Docker Logs
+Blackbox Checks
    |
-   +------------------> Jenkins /prometheus
-   |
-   v
-Blackbox Exporter
-   |
-   v
 Azure Function API
 ```
 
-### Überwachter Endpoint
+---
+
+## Prometheus und Blackbox Exporter
+
+Da Azure Functions keinen nativen Prometheus `/metrics` Endpunkt bereitstellen, wird der Blackbox Exporter verwendet.
+
+Der überwachte Endpoint lautet:
 
 ```text
 https://salmane-poke-func.azurewebsites.net/api/pokemon/pikachu
 ```
 
-### Prometheus Jobs
-
-Prometheus sammelt zwei Arten von Metriken:
-
-1. Jenkins-Metriken über den Job `jenkins`
-2. API-Verfügbarkeit über den Job `poke-delivery-api`
-
-### Verwendete Prometheus-Metriken
-
-#### API Availability
+### Wichtige Prometheus Queries
 
 ```promql
 probe_success
 ```
 
-Bedeutung:
-
-```text
-1 = API erreichbar
-0 = API nicht erreichbar
-```
-
-#### Response Time
-
 ```promql
 probe_duration_seconds
 ```
-
-Zeigt die Antwortzeit der API in Sekunden.
-
-#### HTTP Status Code
 
 ```promql
 probe_http_status_code
 ```
 
-Erwarteter Wert:
+### Jenkins CI/CD Metriken
 
-```text
-200
+```promql
+sum(jenkins_node_online_value)
+```
+
+```promql
+sum(jenkins_executor_count_value)
+```
+
+```promql
+sum(jenkins_executor_free_value)
+```
+
+```promql
+sum(jenkins_executor_in_use_value)
 ```
 
 ---
 
-## Grafana Dashboard
+## Grafana Provisioning
 
-In Grafana wurde ein Dashboard für die PokéDelivery API erstellt.
+Grafana wird automatisch über Provisioning konfiguriert.
 
-### Dashboard Panels
+### Data Sources
 
-- **PokéDelivery API Availability**
-  - Query: `probe_success`
-- **PokéDelivery API Response Time**
-  - Query: `probe_duration_seconds`
-- **PokéDelivery HTTP Status Code**
-  - Query: `probe_http_status_code`
+Die Datei `grafana/provisioning/datasources/datasources.yml` erstellt automatisch:
 
-Das Dashboard zeigt, ob die API erreichbar ist, wie schnell sie antwortet und welchen HTTP-Statuscode sie zurückgibt.
+- Prometheus
+- Loki
+
+### Dashboard
+
+Das Dashboard wird über folgende Datei automatisch geladen:
+
+```text
+grafana/provisioning/dashboards/pokedelivery-monitoring.json
+```
+
+Das Dashboard enthält Panels für:
+
+- API Availability
+- API Response Time
+- HTTP Status Code
+- Jenkins Online Nodes
+- Jenkins Executors
+- Jenkins Free Executors
+- Jenkins Busy Executors
+- Central Container Logs
 
 ---
 
@@ -580,57 +564,13 @@ Jenkins:           http://localhost:8080
 Prometheus:        http://localhost:9090
 Grafana:           http://localhost:3000
 Blackbox Exporter: http://localhost:9115
+Loki:              http://localhost:3100
+Promtail:          http://localhost:9080
 ```
-
----
-
-## Prometheus prüfen
-
-Prometheus Targets öffnen:
-
-```text
-http://localhost:9090/targets
-```
-
-Erwartete Jobs:
-
-```text
-jenkins
-poke-delivery-api
-```
-
-Der Job `poke-delivery-api` sollte den Status `UP` haben.
-
----
-
-## Grafana einrichten
-
-Grafana öffnen:
-
-```text
-http://localhost:3000
-```
-
-Standard Login:
-
-```text
-Username: admin
-Password: admin
-```
-
-Prometheus als Data Source hinzufügen:
-
-```text
-http://prometheus:9090
-```
-
-Wichtig: Innerhalb von Docker wird nicht `localhost`, sondern der Service-Name `prometheus` verwendet.
 
 ---
 
 ## API lokal testen
-
-In den API-Ordner wechseln:
 
 ```bash
 cd api
@@ -666,39 +606,48 @@ curl https://salmane-poke-func.azurewebsites.net/api/pokemon/pikachu
 |---|---|
 | REST API | ✅ umgesetzt |
 | GitHub Repository | ✅ umgesetzt |
+| Branching und Pull Requests | ✅ umgesetzt |
 | GitHub Actions CI | ✅ umgesetzt |
 | Jenkins CD | ✅ umgesetzt |
-| Automatischer Jenkins Start mit `start.sh` | ✅ umgesetzt |
+| Jenkins Configuration as Code | ✅ umgesetzt |
+| Jenkins Job DSL | ✅ umgesetzt |
+| Pipeline as Code | ✅ umgesetzt |
+| Automatischer Jenkins Agent | ✅ umgesetzt |
+| Rollenbasierter Jenkins-Zugriff | ✅ umgesetzt |
+| Secrets außerhalb des Repositories | ✅ umgesetzt |
+| Automatischer Start mit `start.sh` | ✅ umgesetzt |
 | Docker Compose | ✅ umgesetzt |
-| Docker Volumes für Persistenz | ✅ umgesetzt |
 | Terraform IaC | ✅ umgesetzt |
 | Terraform Provider Mirror Fix | ✅ umgesetzt |
 | Azure Deployment | ✅ umgesetzt |
 | Azure Application Insights | ✅ umgesetzt |
 | Prometheus Monitoring | ✅ umgesetzt |
 | Blackbox Exporter | ✅ umgesetzt |
-| Grafana Dashboard | ✅ umgesetzt |
+| Grafana Dashboard Provisioning | ✅ umgesetzt |
+| Loki und Promtail Logs | ✅ umgesetzt |
+| Rebuild nach `docker compose down -v` | ✅ umgesetzt |
 
 ---
 
 ## Was ich gelernt habe
 
 - Aufbau einer serverlosen REST-API mit Azure Functions
-- GitHub Branching und Pull Request Workflow
 - CI mit GitHub Actions
 - CD mit Jenkins
-- Automatisches Auslösen einer Jenkins Pipeline über die Jenkins REST API
-- Nutzung von Jenkins API Token und CSRF Crumb
-- Docker Compose für lokale Infrastruktur
-- Persistente Docker Volumes für Jenkins, Prometheus und Grafana
-- Custom Jenkins Agent Prinzip
-- Infrastructure as Code mit Terraform
-- Behebung von Terraform Provider Registry Problemen in CI/CD
-- Aufbau eines lokalen Terraform Provider Mirrors
-- Azure Deployment mit Function Apps
-- Monitoring mit Azure Application Insights
-- Externes API-Monitoring mit Prometheus Blackbox Exporter
-- Grafana Dashboards für Availability, Response Time und HTTP Status Code
+- Jenkins Configuration as Code
+- Jenkins Job DSL
+- Pipeline as Code mit `Jenkinsfile`
+- rollenbasierte Jenkins-Security
+- sichere Verwaltung von Secrets über `.env`
+- automatisierte Jenkins-Agent-Verbindung
+- Docker Compose für reproduzierbare Infrastruktur
+- Terraform für Azure Infrastructure as Code
+- Behebung von Terraform Provider Registry Problemen
+- Monitoring mit Prometheus und Grafana
+- externe API-Prüfung mit Blackbox Exporter
+- zentrale Logs mit Loki und Promtail
+- Grafana Provisioning für Data Sources und Dashboards
+- vollständiger Rebuild der Umgebung nach gelöschten Volumes
 
 ---
 
@@ -712,11 +661,13 @@ Das Projekt kombiniert:
 - Versionsverwaltung
 - Continuous Integration
 - Continuous Deployment
-- automatisierten Pipeline-Start
+- Security und rollenbasierten Zugriff
 - Containerisierung
 - Infrastructure as Code
+- automatisierte Jenkins-Konfiguration
 - Cloud Deployment
 - Monitoring
+- zentrale Logs
 - Observability
 
-Damit wurde eine produktionsnahe DevOps-Architektur aufgebaut.
+Die Umgebung kann nach einem vollständigen Löschen der Docker Volumes oder auf einer neuen Maschine über `./start.sh` reproduzierbar wieder aufgebaut werden. Damit wurde eine produktionsnahe DevOps-Architektur umgesetzt.
