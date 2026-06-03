@@ -1,5 +1,5 @@
 jenkins:
-  systemMessage: "PokéDelivery Jenkins configured automatically with Configuration as Code"
+  systemMessage: "PokéDelivery Jenkins configured automatically with Configuration as Code and role-based access control"
 
   numExecutors: 0
 
@@ -13,9 +13,28 @@ jenkins:
           name: "Salmane El Aouni"
           password: "${JENKINS_ADMIN_PASSWORD}"
 
+        - id: "${JENKINS_MANAGER_USER}"
+          name: "PokéDelivery Manager"
+          password: "${JENKINS_MANAGER_PASSWORD}"
+
+        - id: "${JENKINS_DEVELOPER_USER}"
+          name: "PokéDelivery Developer"
+          password: "${JENKINS_DEVELOPER_PASSWORD}"
+
   authorizationStrategy:
-    loggedInUsersCanDoAnything:
-      allowAnonymousRead: false
+    globalMatrix:
+      permissions:
+        # Admin user has full Jenkins administration access
+        - "Overall/Administer:${JENKINS_ADMIN_USER}"
+
+        # Developer user has full Jenkins administration access
+        - "Overall/Administer:${JENKINS_DEVELOPER_USER}"
+
+        # Manager user has read-only access
+        - "Overall/Read:${JENKINS_MANAGER_USER}"
+        - "Job/Read:${JENKINS_MANAGER_USER}"
+        - "View/Read:${JENKINS_MANAGER_USER}"
+        - "Agent/ExtendedRead:${JENKINS_MANAGER_USER}"
 
   nodes:
     - permanent:
